@@ -35,7 +35,7 @@ function App() {
   };
 
   useEffect(() => {
-    axios.get('http://localhost:4000/api/selected').then(res => {
+    axios.get('https://loading-c6ds.onrender.com/api/selected').then(res => {
       setSelectedItems(new Set(res.data));
     });
   }, []);
@@ -60,7 +60,7 @@ function App() {
         updatedSelected.add(id);
       }
       console.log(Array.from(updatedSelected));
-      axios.post('http://localhost:4000/api/selected', {
+      axios.post('https://loading-c6ds.onrender.com/api/selected', {
         selectedIds: Array.from(updatedSelected),
       }).catch(err => {
         console.error('Ошибка при отправке выбранных элементов:', err);
