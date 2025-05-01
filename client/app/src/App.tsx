@@ -27,7 +27,7 @@ function App() {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
 
   const loadItems = async (currentPage: number, search: string) => {
-    const res = await axios.get(`http://localhost:4000/api/items`, {
+    const res = await axios.get(`https://loading-c6ds.onrender.com/api/items`, {
       params: { page: currentPage, limit: PAGE_SIZE, search },
     });
     setItems(prev => [...prev, ...res.data]);
