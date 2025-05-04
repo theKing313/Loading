@@ -107,7 +107,7 @@ function App() {
             const newIndex = items.findIndex(i => i.id === over?.id);
             const newItems = arrayMove(items, oldIndex, newIndex);
             setItems(newItems);
-            axios.post('http://localhost:4000/api/order', newItems.map(i => i.id));
+            axios.post('https://loading-c6ds.onrender.com/api/order', newItems.map(i => i.id));
           }
         }}
       >
