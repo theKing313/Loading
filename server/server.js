@@ -5,7 +5,7 @@ const cors = require('cors');
 const app = express();
 const PORT = 4000;
 
-app.use(cors({ origin: 'https://store-26yu.vercel.app/', credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(session({
   secret: 'dev-secret',
