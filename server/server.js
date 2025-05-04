@@ -4,8 +4,21 @@ const cors = require('cors');
 
 const app = express();
 const PORT = 4000;
+const allowedOrigins = ['https://loading-inky.vercel.app', 'https://store-26yu.vercel.app'];
 
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(session({
   secret: 'dev-secret',
