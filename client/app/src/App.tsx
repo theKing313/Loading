@@ -20,7 +20,7 @@ const PAGE_SIZE = 20;
 
 function App() {
   const listRef = useRef<HTMLDivElement>(null);
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,12 +28,18 @@ function App() {
 
   const loadItems = async (currentPage: number, search: string) => {
     const res = await axios.get(`https://loading-c6ds.onrender.com/api/items`, {
+      withCredentials: true,
       params: { page: currentPage, limit: PAGE_SIZE, search },
     });
-    setItems(prev => [...prev, ...res.data]);
+  
+    setItems(prev => {
+      const ids = new Set(prev.map(i => i.id));
+      const newUnique = res.data.filter(i => !ids.has(i.id));
+      return [...prev, ...newUnique];
+    });
+  
     if (res.data.length < PAGE_SIZE) setHasMore(false);
   };
-
   useEffect(() => {
     axios.get('https://loading-c6ds.onrender.com/api/selected').then(res => {
       setSelectedItems(new Set(res.data));
@@ -49,8 +55,29 @@ function App() {
   useEffect(() => {
     loadItems(page, searchTerm);
   }, [page, searchTerm]);
+  const SortableRow = ({ item, selected, onToggle }: any) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
+  
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      padding: '8px',
+      borderBottom: '1px solid #ccc',
+      background: selected ? '#def' : '#000',
+      color: selected ? '#000' : '#fff',
+    };
 
+    return (
+      <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => onToggle(item.id)}>
+        {/* <input type="checkbox" checked={selected}     /> */}
+        <input type="checkbox" checked={selected} onChange={() => onToggle(item.id)} />
+      {item.name}
+    </div>
+    );
+  };
+  
   const toggleSelect = (id: number) => {
+    console.log('toggle')
     setSelectedItems(prevSelected => {
       const updatedSelected = new Set(prevSelected);
   
@@ -107,19 +134,19 @@ function App() {
             const newIndex = items.findIndex(i => i.id === over?.id);
             const newItems = arrayMove(items, oldIndex, newIndex);
             setItems(newItems);
-            axios.post('https://loading-c6ds.onrender.com/api/order', newItems.map(i => i.id));
+            axios.post('http://localhost:4000/api/order', newItems.map(i => i.id));
           }
         }}
       >
         <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
           <div className="container" ref={listRef} style={{ height: '400px', overflow: 'auto' }}>
-            {items.map((item) => (
+            {items.map((item,id) => (
               <SortableRow
-                key={item.id}
-                item={item}
-                selected={selectedItems.has(item.id)}
-                onToggle={() => toggleSelect(item.id)}
-              />
+              key={id}
+              item={item}
+              selected={selectedItems.has(item.id)}
+              onToggle={toggleSelect}
+            />
             ))}
           </div>
         </SortableContext>
@@ -130,20 +157,3 @@ function App() {
 
 export default App;
 
-const SortableRow = ({ item, selected, onToggle }: any) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    padding: '8px',
-    borderBottom: '1px solid #ccc',
-    background: selected ? '#def' : '#000',
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <input type="checkbox" checked={selected} onChange={onToggle} /> {item.name}
-    </div>
-  );
-};
