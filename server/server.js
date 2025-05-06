@@ -1,11 +1,16 @@
+
+
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
 
 const app = express();
 const PORT = 4000;
-const allowedOrigins = ['https://loading-inky.vercel.app', 'https://store-26yu.vercel.app'];
-
+const allowedOrigins = ['https://loading-inky.vercel.app', 'https://store-26yu.vercel.app',
+  'http://localhost:5173'
+];
+// app.use(cors()) 
+// app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(cors({
   origin: function (origin, callback) {
     // allow requests with no origin (like mobile apps or curl requests)
@@ -23,7 +28,8 @@ app.use(express.json());
 app.use(session({
   secret: 'dev-secret',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  cookie: { secure: false }
 }));
 
 const allItems = Array.from({ length: 1000000 }, (_, i) => ({ id: i + 1, name: `Item ${i + 1}` }));
@@ -60,3 +66,4 @@ app.post('/api/selected', (req, res) => {
   });
   
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
