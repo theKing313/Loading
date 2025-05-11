@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import  './App.css'
 import {
@@ -25,20 +25,34 @@ function App() {
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
-
+  const [isLoading, setIsLoading] = useState(false);
+  const isLoadingRef = useRef(false);
   const loadItems = async (currentPage: number, search: string) => {
-    const res = await axios.get(`https://loading-c6ds.onrender.com/api/items`, {
-      withCredentials: true,
-      params: { page: currentPage, limit: PAGE_SIZE, search },
-    });
-  
-    setItems(prev => {
-      const ids = new Set(prev.map(i => i.id));
-      const newUnique = res.data.filter(i => !ids.has(i.id));
-      return [...prev, ...newUnique];
-    });
-  
-    if (res.data.length < PAGE_SIZE) setHasMore(false);
+    if (isLoading) return;
+    isLoadingRef.current = true;
+        try {
+          setPage(p => p + 1);
+          setIsLoading(true);
+          const res = await axios.get(`https://loading-c6ds.onrender.com/api/items`, {
+          withCredentials: true,
+          params: { page: currentPage, limit: PAGE_SIZE, search },
+        });
+        // console.log(res.data)
+        console.log(res)
+        setItems(prev => {
+          const ids = new Set(prev.map(i => i.id));
+          const newUnique = res.data.filter(i => !ids.has(i.id));
+          return [...prev, ...newUnique];
+        });
+      
+        if (res.data.length < PAGE_SIZE) setHasMore(false);
+    } catch (error) {
+      
+    }finally{
+      isLoadingRef.current = false;
+      setIsLoading(false);
+    }
+
   };
   useEffect(() => {
     axios.get('https://loading-c6ds.onrender.com/api/selected').then(res => {
@@ -51,10 +65,13 @@ function App() {
     setPage(0);
     setHasMore(true);
   }, [searchTerm]);
-
   useEffect(() => {
-    loadItems(page, searchTerm);
-  }, [page, searchTerm]);
+     loadItems(page, searchTerm);
+    // handleScroll();
+  }, []);
+  // useEffect(() => {
+  //   loadItems(page, searchTerm);
+  // }, [page, searchTerm]);
   const SortableRow = ({ item, selected, onToggle }: any) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
   
@@ -77,7 +94,7 @@ function App() {
   };
   
   const toggleSelect = (id: number) => {
-    console.log('toggle')
+    // console.log('toggle')
     setSelectedItems(prevSelected => {
       const updatedSelected = new Set(prevSelected);
   
@@ -86,7 +103,7 @@ function App() {
       } else {
         updatedSelected.add(id);
       }
-      console.log(Array.from(updatedSelected));
+      // console.log(Array.from(updatedSelected));
       axios.post('https://loading-c6ds.onrender.com/api/selected', {
         selectedIds: Array.from(updatedSelected),
       }).catch(err => {
@@ -97,15 +114,26 @@ function App() {
     });
   };
 
-  const handleScroll = () => {
-    if (listRef.current) {
-      const scrollPosition = listRef.current.scrollTop + listRef.current.clientHeight;
-      const elementHeight = listRef.current.scrollHeight;
-      if (scrollPosition >= elementHeight * 0.8 && hasMore) {
-        setPage(p => p + 1);
-      }
+const handleScroll = useCallback(() => {
+  if (listRef.current) {
+    console.log(listRef.current.scrollTop)
+    console.log(listRef.current.clientHeight)
+    const scrollPosition = listRef.current.scrollTop + listRef.current.clientHeight;
+    const elementHeight = listRef.current.scrollHeight;
+
+
+    console.log('Видимый ЭКРАН:' , scrollPosition)
+    console.log('ЭКРАН ГЛАВНЫЙ :' , elementHeight)
+    console.log('СТРАНИЦА :' , page)
+    // loadItems(page, searchTerm);
+    
+    if (scrollPosition >= elementHeight  *0.95 && !isLoadingRef.current) {//1200
+      
+      loadItems(page, searchTerm);
     }
-  };
+  
+  }
+}, [ loadItems, page, searchTerm]);
 
   useEffect(() => {
     const ref = listRef.current;
@@ -113,7 +141,7 @@ function App() {
       ref.addEventListener('scroll', handleScroll);
       return () => ref.removeEventListener('scroll', handleScroll);
     }
-  }, [hasMore]);
+  }, [hasMore   ,handleScroll, isLoading]);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
