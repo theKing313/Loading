@@ -17,10 +17,14 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 const PAGE_SIZE = 20;
+interface Item {
+  id: number;
+  name: string;
+}
 
 function App() {
   const listRef = useRef<HTMLDivElement>(null);
-  const [items, setItems] = useState<[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -162,7 +166,7 @@ const handleScroll = useCallback(() => {
             const newIndex = items.findIndex(i => i.id === over?.id);
             const newItems = arrayMove(items, oldIndex, newIndex);
             setItems(newItems);
-            axios.post('http://localhost:4000/api/order', newItems.map(i => i.id));
+            axios.post('https://loading-c6ds.onrender.com/api/order', newItems.map(i => i.id));
           }
         }}
       >
