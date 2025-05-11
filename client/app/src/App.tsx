@@ -45,7 +45,7 @@ function App() {
         console.log(res)
         setItems(prev => {
           const ids = new Set(prev.map(i => i.id));
-          const newUnique = res.data.filter(i => !ids.has(i.id));
+          const newUnique = res.data.filter((i:Item) => !ids.has(i.id));
           return [...prev, ...newUnique];
         });
       
