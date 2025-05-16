@@ -15,6 +15,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDebounce } from './hooks/useDebounce';
 
 const PAGE_SIZE = 20;
 interface Item {
@@ -73,9 +74,18 @@ function App() {
      loadItems(page, searchTerm);
     // handleScroll();
   }, []);
-  // useEffect(() => {
-  //   loadItems(page, searchTerm);
-  // }, [page, searchTerm]);
+
+  //search
+  const debouncedSearchTerm = useDebounce(searchTerm, 500); // задержка 500мс
+  useEffect(() => {
+
+    if (debouncedSearchTerm) {
+        console.log('Отправляем запрос на сервер:', debouncedSearchTerm);
+        loadItems(page, searchTerm);
+    }
+
+  }, [ debouncedSearchTerm]);//page,
+
   const SortableRow = ({ item, selected, onToggle }: any) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
   
@@ -89,9 +99,10 @@ function App() {
     };
 
     return (
-      <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={() => onToggle(item.id)}>
-        {/* <input type="checkbox" checked={selected}     /> */}
-        <input type="checkbox" checked={selected} onChange={() => onToggle(item.id)} />
+      <div ref={setNodeRef} style={style} {...attributes} {...listeners} 
+      >
+
+        <input type="checkbox" checked={selected} onChange={() => onToggle(item.id)} onPointerDown={e => e.stopPropagation()} />
       {item.name}
     </div>
     );
@@ -108,9 +119,8 @@ function App() {
         updatedSelected.add(id);
       }
       // console.log(Array.from(updatedSelected));
-      axios.post('https://loading-c6ds.onrender.com/api/selected', {
-        selectedIds: Array.from(updatedSelected),
-      }).catch(err => {
+
+      axios.post('https://loading-c6ds.onrender.com/api/selected',  Array.from(updatedSelected)).catch(err => {
         console.error('Ошибка при отправке выбранных элементов:', err);
       });
   
@@ -160,26 +170,37 @@ const handleScroll = useCallback(() => {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        onDragEnd={({ active, over }) => {
-          if (active.id !== over?.id) {
-            const oldIndex = items.findIndex(i => i.id === active.id);
-            const newIndex = items.findIndex(i => i.id === over?.id);
-            const newItems = arrayMove(items, oldIndex, newIndex);
-            setItems(newItems);
-            axios.post('https://loading-c6ds.onrender.com/api/order', newItems.map(i => i.id));
-          }
+          onDragEnd={({ active, over }) => {
+          if (!over || active.id === over.id) return;
+
+          const oldIndex = items.findIndex(i => i.id === active.id);
+          const newIndex = items.findIndex(i => i.id === over.id);
+          if (oldIndex === -1 || newIndex === -1) return;
+          console.log(oldIndex )
+          console.log(newIndex )
+          const reordered = arrayMove(items, oldIndex, newIndex);
+            console.log(reordered )
+          setItems(reordered);
+          // setItems(updated);
+          axios.post('https://loading-c6ds.onrender.com/api/order', reordered.map(i => i.id));
         }}
+      
       >
-        <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={items.map(i => i.id)}  strategy={verticalListSortingStrategy}>
           <div className="container" ref={listRef} style={{ height: '400px', overflow: 'auto' }}>
-            {items.map((item,id) => (
-              <SortableRow
-              key={id}
-              item={item}
-              selected={selectedItems.has(item.id)}
-              onToggle={toggleSelect}
-            />
-            ))}
+              {items.length === 0 && isLoading ? (
+              'Загрузка...'
+            ) : (
+              items.map(item => (
+                <SortableRow
+                  key={item.id}
+                  item={item}
+                  selected={selectedItems.has(item.id)}
+                  onToggle={toggleSelect}
+                />
+              ))
+            )}
+
           </div>
         </SortableContext>
       </DndContext>
