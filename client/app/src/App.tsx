@@ -98,7 +98,7 @@ function App() {
       background: selected ? '#def' : '#000',
       color: selected ? '#000' : '#fff',
         touchAction: 'manipulation', 
-        position: 'relative' ,
+        // position: 'relative' ,
         
     };
 
