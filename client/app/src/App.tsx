@@ -7,6 +7,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  TouchSensor,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -96,20 +97,26 @@ function App() {
       borderBottom: '1px solid #ccc',
       background: selected ? '#def' : '#000',
       color: selected ? '#000' : '#fff',
+        touchAction: 'manipulation', 
+        position: 'relative' ,
+        
     };
 
     return (
       <div ref={setNodeRef} style={style} {...attributes} {...listeners} 
       >
 
-        <input type="checkbox" checked={selected} onChange={() => onToggle(item.id)} onPointerDown={e => e.stopPropagation()} />
+        <input type="checkbox" checked={selected} onChange={() => onToggle(item.id)}
+         onPointerDown={e => e.stopPropagation()}
+          onTouchStart={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
+          />
       {item.name}
     </div>
     );
   };
   
   const toggleSelect = (id: number) => {
-    // console.log('toggle')
     setSelectedItems(prevSelected => {
       const updatedSelected = new Set(prevSelected);
   
@@ -118,8 +125,6 @@ function App() {
       } else {
         updatedSelected.add(id);
       }
-      // console.log(Array.from(updatedSelected));
-
       axios.post('https://loading-c6ds.onrender.com/api/selected',  Array.from(updatedSelected)).catch(err => {
         console.error('Ошибка при отправке выбранных элементов:', err);
       });
@@ -157,8 +162,16 @@ const handleScroll = useCallback(() => {
     }
   }, [hasMore   ,handleScroll, isLoading]);
 
-  const sensors = useSensors(useSensor(PointerSensor));
-
+  // const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150, 
+        tolerance: 5,
+      },
+    })
+  );
   return (
     <>
       <input
@@ -187,7 +200,7 @@ const handleScroll = useCallback(() => {
       
       >
         <SortableContext items={items.map(i => i.id)}  strategy={verticalListSortingStrategy}>
-          <div className="container" ref={listRef} style={{ height: '400px', overflow: 'auto' }}>
+          <div className="container" ref={listRef} style={{ height: '400px', overflow: 'auto', touchAction: 'none'  }}>
               {items.length === 0 && isLoading ? (
               'Загрузка...'
             ) : (
